@@ -23,7 +23,7 @@ file_env() {
 	unset "$fileVar"
 }
 
-if [ "${1:0:1}" = '-' ]; then
+if [ "${1:0:1}" = '' ]; then
 	set -- postgres "$@"
 fi
 
@@ -142,4 +142,4 @@ if [ "$1" = 'postgres' ]; then
 	fi
 fi
 
-exec "$@"
+exec "$@" &
