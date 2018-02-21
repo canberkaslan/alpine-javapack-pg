@@ -23,9 +23,11 @@ file_env() {
 	unset "$fileVar"
 }
 
-if [ "${1:0:1}" = '' ]; then
+if [ "${1:0:1}" = '-' ]; then		# if flags are passed, append them to the postgres command
 	set -- postgres "$@"
-fi
+elif [ "${1:0:1}" = '' ]; then		# if no command is passed, set the postgres command
+	set -- postgres
+fi									# otherwise, run whatever command is passed
 
 # allow the container to be started with `--user`
 if [ "$1" = 'postgres' ] && [ "$(id -u)" = '0' ]; then
@@ -142,4 +144,4 @@ if [ "$1" = 'postgres' ]; then
 	fi
 fi
 
-exec "$@" &
+exec "$@" 

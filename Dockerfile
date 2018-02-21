@@ -1,4 +1,5 @@
-FROM neveroddoreven/alpine-javapack
+# vim:set ft=dockerfile:
+FROM library/openjdk:8-jdk-alpine3.7
 
 # alpine includes "postgres" user/group in base install
 #   /etc/passwd:22:postgres:x:70:70::/var/lib/postgresql:/bin/sh
@@ -21,8 +22,8 @@ ENV LANG en_US.utf8
 RUN mkdir /docker-entrypoint-initdb.d
 
 ENV PG_MAJOR 9.6
-ENV PG_VERSION 9.6.5
-ENV PG_SHA256 06da12a7e3dddeb803962af8309fa06da9d6989f49e22865335f0a14bad0744c
+ENV PG_VERSION 9.6.6
+ENV PG_SHA256 399cdffcb872f785ba67e25d275463d74521566318cfef8fe219050d063c8154
 
 RUN set -ex \
 	\
@@ -124,7 +125,7 @@ RUN set -ex \
 # tzdata is optional, but only adds around 1Mb to image size and is recommended by Django documentation:
 # https://docs.djangoproject.com/en/1.10/ref/databases/#optimizing-postgresql-s-configuration
 		tzdata \
-	&& apk del .fetch-deps .build-deps \
+	&& apk del .build-deps \
 	&& cd / \
 	&& rm -rf \
 		/usr/src/postgresql \
@@ -135,17 +136,22 @@ RUN set -ex \
 # make the sample config easier to munge (and "correct by default")
 RUN sed -ri "s!^#?(listen_addresses)\s*=\s*\S+.*!\1 = '*'!" /usr/local/share/postgresql/postgresql.conf.sample
 
-RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql && chmod 777 /var/run/postgresql
+RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql && chmod 2777 /var/run/postgresql
 
 ENV PGDATA /var/lib/postgresql/data
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA" && chmod 777 "$PGDATA" # this 777 will be replaced by 700 at runtime (allows semi-arbitrary "--user" values)
 VOLUME /var/lib/postgresql/data
 
+RUN apk add --no-cache --virtual .cli-tools git maven curl
+
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
-RUN ln -s /usr/local/bin/docker-entrypoint.sh / # backwards compat
-ENTRYPOINT ["docker-entrypoint.sh"]
+RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
+
+RUN chmod 755 usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 5432
-CMD ["postgres"]
 
+USER postgres
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["postgres"]
