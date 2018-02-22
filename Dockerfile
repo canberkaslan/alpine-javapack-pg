@@ -25,13 +25,9 @@ ENV PG_MAJOR 9.6
 ENV PG_VERSION 9.6.6
 ENV PG_SHA256 399cdffcb872f785ba67e25d275463d74521566318cfef8fe219050d063c8154
 
+RUN apk add --no-cache --virtual .cli-deps git maven curl make tar openssl ca-certificates
+
 RUN set -ex \
-	\
-	&& apk add --no-cache --virtual .fetch-deps \
-		ca-certificates \
-		openssl \
-		tar \
-	\
 	&& wget -O postgresql.tar.bz2 "https://ftp.postgresql.org/pub/source/v$PG_VERSION/postgresql-$PG_VERSION.tar.bz2" \
 	&& echo "$PG_SHA256 *postgresql.tar.bz2" | sha256sum -c - \
 	&& mkdir -p /usr/src/postgresql \
@@ -53,7 +49,6 @@ RUN set -ex \
 		libedit-dev \
 		libxml2-dev \
 		libxslt-dev \
-		make \
 #		openldap-dev \
 		openssl-dev \
 # configure: error: prove not found
@@ -141,8 +136,6 @@ RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgres
 ENV PGDATA /var/lib/postgresql/data
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA" && chmod 777 "$PGDATA" # this 777 will be replaced by 700 at runtime (allows semi-arbitrary "--user" values)
 VOLUME /var/lib/postgresql/data
-
-RUN apk add --no-cache --virtual .cli-tools git maven curl
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
