@@ -1,6 +1,24 @@
 # vim:set ft=dockerfile:
 FROM library/openjdk:8-jdk-alpine3.7
 
+# Useful behind corporate proxy w/ cert mangling
+ARG CACERT_VAL
+
+ENV CF_DIAL_TIMEOUT 120
+
+ADD scripts /scripts
+
+RUN apk add --no-cache ca-certificates bash make git curl tar openssl 
+
+RUN [ -n "${CACERT_VAL}" ] \
+    && /scripts/utility.cli.sh -s "${CACERT_VAL}" -o /usr/local/share/ca-certificates/CACERT_VAL.crt install-cacert \
+    || echo "CACERT_VAL skipped"
+
+# Suppress output to a logfile (it emits an unnecessary warning)
+RUN update-ca-certificates 2>/dev/null
+
+RUN ls -lrt /etc/ssl/certs | find /etc/ssl/certs -name *CACERT* 
+
 # alpine includes "postgres" user/group in base install
 #   /etc/passwd:22:postgres:x:70:70::/var/lib/postgresql:/bin/sh
 #   /etc/group:34:postgres:x:70:
@@ -25,10 +43,10 @@ ENV PG_MAJOR 9.6
 ENV PG_VERSION 9.6.6
 ENV PG_SHA256 399cdffcb872f785ba67e25d275463d74521566318cfef8fe219050d063c8154
 
-RUN apk add --no-cache --virtual .cli-deps git maven curl make tar openssl ca-certificates
+RUN apk add --no-cache --virtual .cli-deps git maven
 
 RUN set -ex \
-	&& wget -O postgresql.tar.bz2 "https://ftp.postgresql.org/pub/source/v$PG_VERSION/postgresql-$PG_VERSION.tar.bz2" \
+	&& curl --output postgresql.tar.bz2 "https://ftp.postgresql.org/pub/source/v$PG_VERSION/postgresql-$PG_VERSION.tar.bz2" \
 	&& echo "$PG_SHA256 *postgresql.tar.bz2" | sha256sum -c - \
 	&& mkdir -p /usr/src/postgresql \
 	&& tar \
@@ -70,8 +88,8 @@ RUN set -ex \
 	&& mv src/include/pg_config_manual.h.new src/include/pg_config_manual.h \
 	&& gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
 # explicitly update autoconf config.guess and config.sub so they support more arches/libcs
-	&& wget -O config/config.guess 'https://git.savannah.gnu.org/cgit/config.git/plain/config.guess?id=7d3d27baf8107b630586c962c057e22149653deb' \
-	&& wget -O config/config.sub 'https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=7d3d27baf8107b630586c962c057e22149653deb' \
+	&& curl --output config/config.guess 'https://git.savannah.gnu.org/cgit/config.git/plain/config.guess?id=7d3d27baf8107b630586c962c057e22149653deb' \
+	&& curl --output config/config.sub 'https://git.savannah.gnu.org/cgit/config.git/plain/config.sub?id=7d3d27baf8107b630586c962c057e22149653deb' \
 # configure options taken from:
 # https://anonscm.debian.org/cgit/pkg-postgresql/postgresql.git/tree/debian/rules?h=9.5
 	&& ./configure \
@@ -146,5 +164,5 @@ EXPOSE 5432
 
 USER postgres
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["postgres"]
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+CMD [ "postgres" ]

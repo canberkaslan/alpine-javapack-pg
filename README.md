@@ -1,3 +1,3 @@
-# Alpine NodeJS Docker Image
+# Alpine JAVA Docker Image w/Postgres
 
-Adds gulp and jspm 
+Includes: git, make, curl, and bash
