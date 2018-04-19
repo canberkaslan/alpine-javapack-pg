@@ -140,5 +140,9 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
 	echo
 fi
 
+pg_ctl -D "$PGDATA" \
+		-o "-c listen_addresses='localhost'" \
+		-l ~/postgres.log \
+		-w start
 
 exec "$@" 
