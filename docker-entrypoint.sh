@@ -145,4 +145,4 @@ pg_ctl -D "$PGDATA" \
 		-l ~/postgres.log \
 		-w start
 
-exec "$@" 
+"$@" 
