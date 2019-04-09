@@ -1,5 +1,5 @@
 # vim:set ft=dockerfile:
-FROM library/openjdk:8-jdk-alpine3.7
+FROM openjdk:8-jre
 
 # Useful behind corporate proxy w/ cert mangling
 ARG CACERT_VAL
